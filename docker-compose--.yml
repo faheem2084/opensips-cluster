@@ -1,0 +1,56 @@
+services:
+  opensips:
+    image: opensips:3.2.9
+    container_name: opensips
+    environment:
+      PUBLIC_IP: ${PUBLIC_IP}
+      PORT: ${PORT}
+      DOLLOR: ${DOLLOR:-'$'}
+    volumes:
+      - ./opensips.cfg:/usr/local/etc/opensips/opensips.cfg
+    networks:
+      opensips_cluster:
+        ipv4_address: 172.168.34.51
+    ports:
+      - "5060:5060/udp"
+      - "5060:5060/tcp"
+
+
+
+  # postgres:
+  #   image: postgres:latest
+  #   container_name: postgres
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: mydatabase
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+  #   networks:
+  #     opensips_cluster:
+  #       ipv4_address: 172.168.34.52
+
+  # adminer:
+  #   image: adminer:latest
+  #   container_name: adminer
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     ADMINER_DEFAULT_SERVER: postgres
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     opensips_cluster:
+  #       ipv4_address: 172.168.34.53
+
+networks:
+  opensips_cluster:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.168.34.0/24
+
+volumes:
+  postgres_data:
