@@ -61,4 +61,4 @@ RUN apt-get clean && \
 EXPOSE 5060/udp 5060/tcp
 EXPOSE 8844/tcp
 
-ENTRYPOINT ["/usr/local/sbin/opensips", "-F"]
+ENTRYPOINT ["/usr/local/sbin/opensips",  "-M", "8", "-m", "256", "-F"]
