@@ -1,6 +1,6 @@
 FROM debian:12-slim
 
-ENV OPENSIPS_VERSION=3.2.9
+ENV OPENSIPS_VERSION=3.4.11
 
 # Install essential build tools and development libraries
 RUN apt-get update && \
@@ -54,11 +54,11 @@ RUN wget --no-check-certificate https://download.opensips.org/opensips-${OPENSIP
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* /usr/src/opensips*
 
-COPY ./opensips.sh /opensips.sh
-RUN chmod +x /opensips.sh
+# COPY ./opensips.sh /opensips.sh
+# RUN chmod +x /opensips.sh
 
 # Expose ports
 EXPOSE 5060/udp 5060/tcp
 EXPOSE 8844/tcp
 
-ENTRYPOINT ["/opensips.sh"]
+ENTRYPOINT ["/usr/local/sbin/opensips", "-F"]

@@ -1,11 +1,10 @@
+version: '3.8'
+
 services:
   opensips:
-    image: opensips:3.2.9
-    container_name: opensips
-    environment:
-      PUBLIC_IP: ${PUBLIC_IP}
-      PORT: ${PORT}
-      DOLLOR: ${DOLLOR:-'$'}
+    image: opensips:opensips_arm64-3.4.11  
+    # environment:
+    #   # Add any environment variables here if needed
     volumes:
       - ./opensips.cfg:/usr/local/etc/opensips/opensips.cfg
     networks:
@@ -14,8 +13,17 @@ services:
     ports:
       - "5060:5060/udp"
       - "5060:5060/tcp"
-
-
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "opensipsctl", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # postgres:
   #   image: postgres:latest
@@ -31,6 +39,7 @@ services:
   #   networks:
   #     opensips_cluster:
   #       ipv4_address: 172.168.34.52
+  #   restart: unless-stopped
 
   # adminer:
   #   image: adminer:latest
@@ -44,6 +53,7 @@ services:
   #   networks:
   #     opensips_cluster:
   #       ipv4_address: 172.168.34.53
+  #   restart: unless-stopped
 
 networks:
   opensips_cluster:
@@ -52,5 +62,5 @@ networks:
       config:
         - subnet: 172.168.34.0/24
 
-volumes:
-  postgres_data:
+# volumes:
+#   postgres_data:
