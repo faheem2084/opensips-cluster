@@ -57,10 +57,10 @@ services:
     tty: true
     entrypoint: ["/run.sh", "-o", "communication_type=http"]
     volumes:
-      - ./config:/config
+      - ./opensips_cli_config:/config
     depends_on:
       - opensips
-
+    ### Usage ➜ docker exec -it opensips-cli opensips-cli  -f /config/opensips-cli.cfg -o url=http://172.168.34.51:8888/mi  -x mi version 
   adminer:
     image: adminer:latest
     container_name: adminer
