@@ -36,8 +36,8 @@ RUN apt-get update && \
         gettext \
         ca-certificates
 
-# Create a symbolic link for Python
-RUN ln -sf /usr/bin/python3 /usr/bin/python
+# # Create a symbolic link for Python
+# RUN ln -sf /usr/bin/python3 /usr/bin/python
 
 # Copy necessary files
 COPY ./templates/ /templates

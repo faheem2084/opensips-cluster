@@ -1,21 +1,21 @@
 services:
   postgres:
-    image: postgres:latest
+    image: postgres:${POSTGRES_VERSION}  # Using version from .env
     container_name: postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: mydatabase
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT}:${POSTGRES_PORT}"
     networks:
       opensips_cluster:
-        ipv4_address: 172.168.34.52
+        ipv4_address: ${POSTGRES_IP}
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d mydatabase"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -27,23 +27,58 @@ services:
       - ./opensips_configs/opensips.cfg:/usr/local/etc/opensips/opensips.cfg
     networks:
       opensips_cluster:
-        ipv4_address: 172.168.34.51
+        ipv4_address: ${OPENSIPS_IP}
     ports:
-      - "5060:5060/udp"
-      - "5060:5060/tcp"
-      - "8888:8888/tcp"
-
+      - "${SIP_PORT}:${SIP_PORT}/udp"
+      - "${SIP_PORT}:${SIP_PORT}/tcp"
+      - "${HTTP_MI_PORT}:${HTTP_MI_PORT}/tcp"
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+
+  rtpproxy:
+    image: sippylabs/rtpproxy
+    container_name: rtpproxy
+    networks:
+      opensips_cluster:
+        ipv4_address: ${RTPPROXY_IP}
+    ports:
+      - "${RTP_MIN_PORT}-${RTP_MAX_PORT}:${RTP_MIN_PORT}-${RTP_MAX_PORT}/udp"
+      - "${RTPPROXY_CONTROL_PORT}:${RTPPROXY_CONTROL_PORT}/udp"
+    command: [
+      "-f", # Run in foreground
+      "-l", "${RTPPROXY_IP}",
+      "-s", "udp:${RTPPROXY_IP}:${RTPPROXY_CONTROL_PORT}",
+      "-m", "${RTP_MIN_PORT}",
+      "-M", "${RTP_MAX_PORT}",
+      "-A", "${EXTERNAL_IP}"
+    ]
+    restart: unless-stopped
+
+  rtpengine:
+    image: drachtio/rtpengine:latest
+    container_name: rtpengine
+    command: [
+      "rtpengine",
+      "--interface", "private/${RTPENGINE_PRIVATE_IP}",
+      "--interface", "public/${RTPPROXY_IP}!${RTPENGINE_PUBLIC_IP}",
+      "--listen-ng", "${RTPENGINE_PRIVATE_IP}:${RTPENGINE_NG_PORT}"
+    ]
+    networks:
+      opensips_cluster:
+        ipv4_address: ${RTPENGINE_PRIVATE_IP}
+    ports:
+      - "${RTPENGINE_NG_PORT}:${RTPENGINE_NG_PORT}"
+      - "${RTPENGINE_MIN_PORT}-${RTPENGINE_MAX_PORT}:${RTPENGINE_MIN_PORT}-${RTPENGINE_MAX_PORT}/udp"
+    restart: unless-stopped
 
   opensips-cli:
     container_name: "opensips-cli"
     image: opensips/opensips-cli:latest
     networks:
       opensips_cluster:
-        ipv4_address: 172.168.34.54
+        ipv4_address: ${OPENSIPS_CLI_IP}
     logging:
       driver: "json-file"
       options:
@@ -58,21 +93,22 @@ services:
     entrypoint: ["/run.sh", "-o", "communication_type=http"]
     volumes:
       - ./opensips_cli_config:/config
-    depends_on:
-      - opensips
+
+    # entrypoint: ["/run.sh", "-o", "communication_type=http"]
     ### Usage ➜ docker exec -it opensips-cli opensips-cli  -f /config/opensips-cli.cfg -o url=http://172.168.34.51:8888/mi  -x mi version 
+
   adminer:
     image: adminer:latest
     container_name: adminer
     ports:
-      - "8080:8080"
+      - "${ADMINER_PORT}:${ADMINER_PORT}"
     environment:
       ADMINER_DEFAULT_SERVER: postgres
-    depends_on:
-      - postgres
     networks:
       opensips_cluster:
-        ipv4_address: 172.168.34.53
+        ipv4_address: ${ADMINER_IP}
+    depends_on:
+      - postgres
     restart: unless-stopped
 
 networks:
@@ -80,4 +116,4 @@ networks:
     driver: bridge
     ipam:
       config:
-        - subnet: 172.168.34.0/24
+        - subnet: ${SUBNET}
