@@ -21,7 +21,7 @@ services:
       retries: 10
 
   opensips:
-    image: opensips:opensips_arm64-3.4.11
+    image: opensips_arm64-3.4.11
     container_name: opensips
     volumes:
       - ./opensips_configs/opensips.cfg:/usr/local/etc/opensips/opensips.cfg
