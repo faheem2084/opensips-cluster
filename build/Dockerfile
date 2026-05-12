@@ -1,6 +1,6 @@
 FROM debian:12-slim
 
-ENV OPENSIPS_VERSION=3.4.11
+ENV OPENSIPS_VERSION=3.4.17
 
 # Install essential build tools and development libraries
 RUN apt-get update && \

@@ -21,7 +21,7 @@ services:
       retries: 10
 
   opensips:
-    image: opensips_arm64-3.4.11
+    image: opensips_arm64-3.4.17
     container_name: opensips
     volumes:
       - ./opensips_configs/opensips.cfg:/usr/local/etc/opensips/opensips.cfg
@@ -37,65 +37,65 @@ services:
       postgres:
         condition: service_healthy
 
-  rtpproxy:
-    image: sippylabs/rtpproxy
-    container_name: rtpproxy
-    networks:
-      opensips_cluster:
-        ipv4_address: ${RTPPROXY_IP}
-    ports:
-      - "${RTP_MIN_PORT}-${RTP_MAX_PORT}:${RTP_MIN_PORT}-${RTP_MAX_PORT}/udp"
-      - "${RTPPROXY_CONTROL_PORT}:${RTPPROXY_CONTROL_PORT}/udp"
-    command: [
-      "-f", # Run in foreground
-      "-l", "${RTPPROXY_IP}",
-      "-s", "udp:${RTPPROXY_IP}:${RTPPROXY_CONTROL_PORT}",
-      "-m", "${RTP_MIN_PORT}",
-      "-M", "${RTP_MAX_PORT}",
-      "-A", "${EXTERNAL_IP}"
-    ]
-    restart: unless-stopped
+  # rtpproxy:
+  #   image: sippylabs/rtpproxy
+  #   container_name: rtpproxy
+  #   networks:
+  #     opensips_cluster:
+  #       ipv4_address: ${RTPPROXY_IP}
+  #   ports:
+  #     - "${RTP_MIN_PORT}-${RTP_MAX_PORT}:${RTP_MIN_PORT}-${RTP_MAX_PORT}/udp"
+  #     - "${RTPPROXY_CONTROL_PORT}:${RTPPROXY_CONTROL_PORT}/udp"
+  #   command: [
+  #     "-f", # Run in foreground
+  #     "-l", "${RTPPROXY_IP}",
+  #     "-s", "udp:${RTPPROXY_IP}:${RTPPROXY_CONTROL_PORT}",
+  #     "-m", "${RTP_MIN_PORT}",
+  #     "-M", "${RTP_MAX_PORT}",
+  #     "-A", "${EXTERNAL_IP}"
+  #   ]
+  #   restart: unless-stopped
 
-  rtpengine:
-    image: drachtio/rtpengine:latest
-    container_name: rtpengine
-    command: [
-      "rtpengine",
-      "--interface", "private/${RTPENGINE_PRIVATE_IP}",
-      "--interface", "public/${RTPPROXY_IP}!${RTPENGINE_PUBLIC_IP}",
-      "--listen-ng", "${RTPENGINE_PRIVATE_IP}:${RTPENGINE_NG_PORT}"
-    ]
-    networks:
-      opensips_cluster:
-        ipv4_address: ${RTPENGINE_PRIVATE_IP}
-    ports:
-      - "${RTPENGINE_NG_PORT}:${RTPENGINE_NG_PORT}"
-      - "${RTPENGINE_MIN_PORT}-${RTPENGINE_MAX_PORT}:${RTPENGINE_MIN_PORT}-${RTPENGINE_MAX_PORT}/udp"
-    restart: unless-stopped
+  # rtpengine:
+  #   image: drachtio/rtpengine:latest
+  #   container_name: rtpengine
+  #   command: [
+  #     "rtpengine",
+  #     "--interface", "private/${RTPENGINE_PRIVATE_IP}",
+  #     "--interface", "public/${RTPPROXY_IP}!${RTPENGINE_PUBLIC_IP}",
+  #     "--listen-ng", "${RTPENGINE_PRIVATE_IP}:${RTPENGINE_NG_PORT}"
+  #   ]
+  #   networks:
+  #     opensips_cluster:
+  #       ipv4_address: ${RTPENGINE_PRIVATE_IP}
+  #   ports:
+  #     - "${RTPENGINE_NG_PORT}:${RTPENGINE_NG_PORT}"
+  #     - "${RTPENGINE_MIN_PORT}-${RTPENGINE_MAX_PORT}:${RTPENGINE_MIN_PORT}-${RTPENGINE_MAX_PORT}/udp"
+  #   restart: unless-stopped
 
-  opensips-cli:
-    container_name: "opensips-cli"
-    image: opensips/opensips-cli:latest
-    networks:
-      opensips_cluster:
-        ipv4_address: ${OPENSIPS_CLI_IP}
-    logging:
-      driver: "json-file"
-      options:
-        max-file: "10"
-        max-size: "200m"
-    restart: always
-    ulimits:
-      core: -1
-    privileged: true
-    stdin_open: true
-    tty: true
-    entrypoint: ["/run.sh", "-o", "communication_type=http"]
-    volumes:
-      - ./opensips_cli_config:/config
+  # opensips-cli:
+  #   container_name: "opensips-cli"
+  #   image: opensips/opensips-cli:latest
+  #   networks:
+  #     opensips_cluster:
+  #       ipv4_address: ${OPENSIPS_CLI_IP}
+  #   logging:
+  #     driver: "json-file"
+  #     options:
+  #       max-file: "10"
+  #       max-size: "200m"
+  #   restart: always
+  #   ulimits:
+  #     core: -1
+  #   privileged: true
+  #   stdin_open: true
+  #   tty: true
+  #   entrypoint: ["/run.sh", "-o", "communication_type=http"]
+  #   volumes:
+  #     - ./opensips_cli_config:/config
 
-    # entrypoint: ["/run.sh", "-o", "communication_type=http"]
-    ### Usage ➜ docker exec -it opensips-cli opensips-cli  -f /config/opensips-cli.cfg -o url=http://172.168.34.51:8888/mi  -x mi version 
+  #   # entrypoint: ["/run.sh", "-o", "communication_type=http"]
+  #   ### Usage ➜ docker exec -it opensips-cli opensips-cli  -f /config/opensips-cli.cfg -o url=http://172.168.34.51:8888/mi  -x mi version 
 
   adminer:
     image: adminer:latest
@@ -111,51 +111,50 @@ services:
       - postgres
     restart: unless-stopped
 
+  # zookeeper:
+  #   image: bitnami/zookeeper:latest
+  #   container_name: zookeeper
+  #   environment:
+  #     ALLOW_ANONYMOUS_LOGIN: "yes"
+  #   networks:
+  #     opensips_cluster:
+  #       ipv4_address: ${ZOOKEEPER_IP}
+  #   ports:
+  #     - "${ZOOKEEPER_PORT}:${ZOOKEEPER_PORT}"
+  #   restart: unless-stopped
 
-  zookeeper:
-    image: bitnami/zookeeper:latest
-    container_name: zookeeper
-    environment:
-      ALLOW_ANONYMOUS_LOGIN: "yes"
-    networks:
-      opensips_cluster:
-        ipv4_address: ${ZOOKEEPER_IP}
-    ports:
-      - "${ZOOKEEPER_PORT}:${ZOOKEEPER_PORT}"
-    restart: unless-stopped
+  # kafka:
+  #   image: bitnami/kafka:3.6.1
+  #   container_name: kafka
+  #   environment:
+  #     KAFKA_CFG_ZOOKEEPER_CONNECT: ${ZOOKEEPER_IP}:${ZOOKEEPER_PORT}
+  #     KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_IP}:${KAFKA_PORT}
+  #     KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:${KAFKA_PORT}
+  #     ALLOW_PLAINTEXT_LISTENER: "yes"
+  #     KAFKA_BROKER_ID: 1
+  #   depends_on:
+  #     - zookeeper
+  #   networks:
+  #     opensips_cluster:
+  #       ipv4_address: ${KAFKA_IP}
+  #   ports:
+  #     - "${KAFKA_PORT}:${KAFKA_PORT}"
+  #   restart: unless-stopped
 
-  kafka:
-    image: bitnami/kafka:3.6.1
-    container_name: kafka
-    environment:
-      KAFKA_CFG_ZOOKEEPER_CONNECT: ${ZOOKEEPER_IP}:${ZOOKEEPER_PORT}
-      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_IP}:${KAFKA_PORT}
-      KAFKA_CFG_LISTENERS: PLAINTEXT://0.0.0.0:${KAFKA_PORT}
-      ALLOW_PLAINTEXT_LISTENER: "yes"
-      KAFKA_BROKER_ID: 1
-    depends_on:
-      - zookeeper
-    networks:
-      opensips_cluster:
-        ipv4_address: ${KAFKA_IP}
-    ports:
-      - "${KAFKA_PORT}:${KAFKA_PORT}"
-    restart: unless-stopped
-
-  kafdrop:
-    image: obsidiandynamics/kafdrop
-    container_name: kafdrop
-    environment:
-      KAFKA_BROKER_CONNECT: ${KAFKA_IP}:${KAFKA_PORT}
-      JVM_OPTS: "-Xms32M -Xmx128M"
-    ports:
-      - "${KAFDROP_PORT}:9000"
-    depends_on:
-      - kafka
-    networks:
-      opensips_cluster:
-        ipv4_address: ${KAFDROP_IP}
-    restart: unless-stopped
+  # kafdrop:
+  #   image: obsidiandynamics/kafdrop
+  #   container_name: kafdrop
+  #   environment:
+  #     KAFKA_BROKER_CONNECT: ${KAFKA_IP}:${KAFKA_PORT}
+  #     JVM_OPTS: "-Xms32M -Xmx128M"
+  #   ports:
+  #     - "${KAFDROP_PORT}:9000"
+  #   depends_on:
+  #     - kafka
+  #   networks:
+  #     opensips_cluster:
+  #       ipv4_address: ${KAFDROP_IP}
+  #   restart: unless-stopped
 
 
 
